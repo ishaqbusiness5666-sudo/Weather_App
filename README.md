@@ -1,5 +1,7 @@
-#Live Website Demo  
-**https://netflex-clone-red-eight.vercel.app/
+# Live Website Demo  
+
+https://netflex-clone-red-eight.vercel.app/
+
 # 🌤️ Weather App
 
 A beautiful, responsive weather application that provides real-time weather data and 7-day forecasts for any location worldwide. Built with HTML, CSS, JavaScript, and enhanced with GSAP animations.
@@ -19,7 +21,7 @@ A beautiful, responsive weather application that provides real-time weather data
 
 ## 🚀 Live Demo
 
-Just open `weather-app-proxy.html` in any modern web browser!
+Just open `[weather-app-proxy.html](https://netflex-clone-red-eight.vercel.app/)` in any modern web browser!
 
 ## 🛠️ Technology Stack
 
