@@ -99,7 +99,7 @@ Simply download the HTML file and open in browser. No installation needed!
 
 ### Option 2: Clone Repository
 ```bash
-git clone https://github.com/yourusername/weather-app.git
+git clone https://github.com/ishaqbusiness5666-sudo/Weather_App.git
 cd weather-app
 # Open weather-app-proxy.html in your browser
 ```
