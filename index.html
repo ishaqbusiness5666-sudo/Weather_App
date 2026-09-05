@@ -3,474 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkyCast - Weather Intelligence</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="A calm, clear weather forecast for any city.">
+    <title>SkyCast | A gentler weather view</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            background-attachment: fixed;
-            min-height: 100vh;
-            color: white;
-            overflow-x: hidden;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 2rem;
-        }
-
-        .glass-card-sm {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 1.5rem;
-        }
-
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        .animate-float {
-            animation: float 6s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .animate-bounce-slow {
-            animation: bounce-slow 3s ease-in-out infinite;
-        }
-
-        @keyframes bounce-slow {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
-        }
-
-        .search-dropdown {
-            max-height: 300px;
-            overflow-y: auto;
-            z-index: 100;
-        }
-
-        .loader {
-            border-top-color: #00d4ff;
-            animation: spinner 0.6s linear infinite;
-        }
-
-        @keyframes spinner {
-            to { transform: rotate(360deg); }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        input:focus {
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.3);
-        }
-    </style>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#00d4ff',
-                    }
-                }
-            }
-        }
-    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-6xl mx-auto">
-        <!-- Header -->
-        <header class="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30">
-                    <i data-lucide="cloud" class="text-[#0f0c29]"></i>
-                </div>
-                <h1 class="text-3xl font-bold tracking-tight">SkyCast</h1>
+<body>
+    <div class="app-shell">
+        <header class="site-header">
+            <div class="brand">
+                <div class="brand-mark"><i data-lucide="cloud-sun"></i></div>
+                <h1 class="brand-name">SkyCast</h1>
             </div>
-
-            <div class="relative w-full md:max-w-md">
-                <div class="relative">
-                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 w-5 h-5"></i>
-                    <input 
-                        type="text" 
-                        id="citySearch" 
-                        placeholder="Search any city..." 
-                        class="w-full pl-12 pr-4 py-3 glass-card bg-transparent text-white placeholder:text-white/30 border-none focus:ring-0 rounded-full h-14"
-                    >
+            <div class="header-tools">
+                <div class="search-wrap">
+                    <label class="search-box" for="citySearch">
+                        <i data-lucide="search"></i>
+                        <input id="citySearch" type="search" placeholder="Search a city" autocomplete="off">
+                    </label>
+                    <div id="searchDropdown" class="search-dropdown hidden"></div>
                 </div>
-                <div id="searchDropdown" class="absolute top-full left-0 right-0 mt-3 glass-card overflow-hidden hidden search-dropdown">
-                    <!-- Suggestions will appear here -->
-                </div>
+                <button id="unitToggle" class="unit-toggle" type="button" aria-label="Switch temperature unit">
+                    <i data-lucide="thermometer"></i><span id="unitText">°C</span>
+                </button>
             </div>
-
-            <button id="unitToggle" class="px-8 py-3 glass-card font-semibold hover:bg-white/15 transition-all flex items-center gap-2 h-14">
-                <i data-lucide="thermometer" class="text-primary w-5 h-5"></i>
-                <span id="unitText">°C</span>
-            </button>
         </header>
 
-        <!-- Loading State -->
-        <div id="loading" class="flex flex-col items-center justify-center min-h-[50vh] hidden">
-            <div class="w-16 h-16 border-4 border-white/10 border-t-primary rounded-full animate-spin mb-6"></div>
-            <p class="text-white/60 font-medium animate-pulse">Syncing with satellites...</p>
-        </div>
+        <main>
+            <section id="loading" class="state hidden" aria-live="polite">
+                <div class="loader"></div><p>Gathering the latest forecast...</p>
+            </section>
+            <section id="error" class="state hidden" aria-live="assertive">
+                <div class="state-icon"><i data-lucide="cloud-off"></i></div>
+                <h2>Location not found</h2>
+                <p id="errorMessage">We couldn't find weather data for this location.</p>
+                <button class="reset-button" onclick="loadDefaultWeather()" type="button">Try again</button>
+            </section>
 
-        <!-- Error State -->
-        <div id="error" class="flex flex-col items-center justify-center min-h-[50vh] text-center hidden">
-            <div class="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
-                <i data-lucide="cloud-off" class="text-red-500 w-10 h-10"></i>
-            </div>
-            <h2 class="text-2xl font-bold mb-2">Location Not Found</h2>
-            <p id="errorMessage" class="text-white/50 mb-8">We couldn't find the weather data for this location.</p>
-            <button onclick="loadDefaultWeather()" class="px-8 py-3 bg-white text-black font-semibold rounded-full hover:bg-white/90 transition-all">Reset</button>
-        </div>
-
-        <!-- Main Weather Content -->
-        <div id="weatherContent" class="hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-                <!-- Current Weather Card -->
-                <div class="lg:col-span-2 glass-card p-8 md:p-12 relative overflow-hidden group">
-                    <div id="mainIcon" class="absolute top-0 right-0 p-8 text-[12rem] opacity-10 animate-float transition-all group-hover:opacity-20 pointer-events-none">☀️</div>
-                    
-                    <div class="relative z-10">
-                        <div class="flex items-center gap-2 text-white/70 mb-2">
-                            <i data-lucide="map-pin" class="text-primary w-5 h-5"></i>
-                            <span id="cityName" class="text-xl font-medium">Kandhkot, Sindh</span>
-                        </div>
-                        <p id="currentDate" class="text-white/40 mb-10 text-lg">Friday, 8 May 2026</p>
-                        
-                        <div class="flex items-baseline gap-2 mb-8">
-                            <h2 id="mainTemp" class="text-9xl font-bold tracking-tighter">32°</h2>
-                            <span id="mainUnit" class="text-4xl text-primary font-medium">/C</span>
-                        </div>
-
-                        <div class="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-white/10 mb-12">
-                            <span id="conditionIcon" class="text-2xl">☀️</span>
-                            <span id="conditionText" class="font-semibold text-lg">Clear Sky</span>
-                        </div>
-
-                        <div class="flex gap-12">
-                            <div>
-                                <p class="text-white/30 text-xs uppercase tracking-widest mb-1">High</p>
-                                <p id="todayHigh" class="text-2xl font-bold">35°</p>
-                            </div>
-                            <div class="w-px h-12 bg-white/10"></div>
-                            <div>
-                                <p class="text-white/30 text-xs uppercase tracking-widest mb-1">Low</p>
-                                <p id="todayLow" class="text-2xl font-bold">28°</p>
-                            </div>
-                            <div class="w-px h-12 bg-white/10"></div>
-                            <div>
-                                <p class="text-white/30 text-xs uppercase tracking-widest mb-1">Rain</p>
-                                <p id="todayRain" class="text-2xl font-bold">0mm</p>
+            <section id="weatherContent" class="weather-content hidden">
+                <div class="weather-grid">
+                    <article class="current-card glass-card">
+                        <div id="mainIcon" class="main-icon">☀️</div>
+                        <div class="current-copy">
+                            <p class="location-line"><i data-lucide="map-pin"></i><span id="cityName">Kandhkot, Pakistan</span></p>
+                            <p id="currentDate" class="current-date">Today</p>
+                            <div class="temperature-line"><h2 id="mainTemp" class="temperature">32°</h2><span id="mainUnit" class="temperature-unit">/C</span></div>
+                            <div class="condition-pill"><span id="conditionIcon" class="condition-icon">☀️</span><strong id="conditionText">Clear sky</strong></div>
+                            <div class="summary-stats">
+                                <div class="summary-stat"><span>High</span><strong id="todayHigh">35°</strong></div>
+                                <div class="summary-stat"><span>Low</span><strong id="todayLow">28°</strong></div>
+                                <div class="summary-stat"><span>Rain</span><strong id="todayRain">0mm</strong></div>
                             </div>
                         </div>
+                    </article>
+                    <div class="stats-grid">
+                        <article class="stat-card glass-card-sm"><div class="stat-icon"><i data-lucide="droplets"></i></div><div><p class="stat-label">Humidity</p><p id="statHumidity" class="stat-value">45%</p></div></article>
+                        <article class="stat-card glass-card-sm"><div class="stat-icon"><i data-lucide="wind"></i></div><div><p class="stat-label">Wind</p><p id="statWind" class="stat-value">12 km/h</p></div></article>
+                        <article class="stat-card glass-card-sm"><div class="stat-icon"><i data-lucide="sunrise"></i></div><div><p class="stat-label">Sunrise</p><p id="statSunrise" class="stat-value">05:42</p></div></article>
+                        <article class="stat-card glass-card-sm"><div class="stat-icon"><i data-lucide="sunset"></i></div><div><p class="stat-label">Sunset</p><p id="statSunset" class="stat-value">19:12</p></div></article>
                     </div>
                 </div>
 
-                <!-- Quick Stats Grid -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="glass-card-sm p-6 flex flex-col justify-between hover:-translate-y-1 transition-all">
-                        <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-4">
-                            <i data-lucide="droplets" class="text-primary w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <p class="text-white/40 text-xs uppercase tracking-widest mb-1">Humidity</p>
-                            <p id="statHumidity" class="text-2xl font-bold">45%</p>
-                        </div>
-                    </div>
-                    <div class="glass-card-sm p-6 flex flex-col justify-between hover:-translate-y-1 transition-all">
-                        <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-4">
-                            <i data-lucide="wind" class="text-primary w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <p class="text-white/40 text-xs uppercase tracking-widest mb-1">Wind</p>
-                            <p id="statWind" class="text-2xl font-bold">12 km/h</p>
-                        </div>
-                    </div>
-                    <div class="glass-card-sm p-6 flex flex-col justify-between hover:-translate-y-1 transition-all">
-                        <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-4">
-                            <i data-lucide="sunrise" class="text-primary w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <p class="text-white/40 text-xs uppercase tracking-widest mb-1">Sunrise</p>
-                            <p id="statSunrise" class="text-2xl font-bold">05:42</p>
-                        </div>
-                    </div>
-                    <div class="glass-card-sm p-6 flex flex-col justify-between hover:-translate-y-1 transition-all">
-                        <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-4">
-                            <i data-lucide="sunset" class="text-primary w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <p class="text-white/40 text-xs uppercase tracking-widest mb-1">Sunset</p>
-                            <p id="statSunset" class="text-2xl font-bold">19:12</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Hourly Forecast -->
-            <div class="mb-12">
-                <div class="flex items-center gap-2 mb-6 ml-2">
-                    <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                    <h3 class="font-semibold text-white/80">Next 24 Hours</h3>
-                </div>
-                <div id="hourlyContainer" class="flex gap-4 overflow-x-auto pb-6 hide-scrollbar snap-x">
-                    <!-- Hourly items will be injected here -->
-                </div>
-            </div>
-
-            <!-- 7-Day Forecast -->
-            <div>
-                <div class="flex items-center gap-2 mb-6 ml-2">
-                    <div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                    <h3 class="font-semibold text-white/80">7-Day Outlook</h3>
-                </div>
-                <div id="dailyContainer" class="glass-card overflow-hidden">
-                    <div id="dailyList" class="divide-y divide-white/5">
-                        <!-- Daily items will be injected here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <footer class="mt-20 mb-12 text-center text-white/20 text-xs tracking-widest uppercase">
-            <p>© 2026 SkyCast Global • Precision Weather Intelligence</p>
-        </footer>
+                <section class="forecast-section"><h2 class="section-heading">Next 24 hours</h2><div id="hourlyContainer" class="hourly-container"></div></section>
+                <section class="forecast-section"><h2 class="section-heading">7-day outlook</h2><div class="daily-list glass-card"><div id="dailyList"></div></div></section>
+            </section>
+        </main>
+        <footer class="site-footer">SkyCast · A clearer way to check the day</footer>
     </div>
-
-    <script>
-        // State
-        let weatherData = null;
-        let currentCity = { name: "Kandhkot", latitude: 28.24, longitude: 69.29, country: "Pakistan" };
-        let unit = 'C';
-        let debounceTimer;
-
-        const WEATHER_CODES = {
-            0: { label: "Clear sky", icon: "☀️" },
-            1: { label: "Mainly clear", icon: "🌤️" },
-            2: { label: "Partly cloudy", icon: "⛅" },
-            3: { label: "Overcast", icon: "☁️" },
-            45: { label: "Fog", icon: "🌫️" },
-            48: { label: "Rime fog", icon: "🌫️" },
-            51: { label: "Light drizzle", icon: "🌦️" },
-            53: { label: "Moderate drizzle", icon: "🌦️" },
-            55: { label: "Dense drizzle", icon: "🌦️" },
-            61: { label: "Slight rain", icon: "🌧️" },
-            63: { label: "Moderate rain", icon: "🌧️" },
-            65: { label: "Heavy rain", icon: "🌧️" },
-            71: { label: "Slight snow", icon: "❄️" },
-            73: { label: "Moderate snow", icon: "❄️" },
-            75: { label: "Heavy snow", icon: "❄️" },
-            95: { label: "Thunderstorm", icon: "⛈️" },
-        };
-
-        // DOM Elements
-        const citySearch = document.getElementById('citySearch');
-        const searchDropdown = document.getElementById('searchDropdown');
-        const unitToggle = document.getElementById('unitToggle');
-        const loadingEl = document.getElementById('loading');
-        const errorEl = document.getElementById('error');
-        const weatherContent = document.getElementById('weatherContent');
-
-        // Initialize
-        function init() {
-            lucide.createIcons();
-            loadWeather(currentCity);
-            
-            citySearch.addEventListener('input', (e) => {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => searchCities(e.target.value), 300);
-            });
-
-            unitToggle.addEventListener('click', toggleUnit);
-            
-            document.addEventListener('click', (e) => {
-                if (!citySearch.contains(e.target) && !searchDropdown.contains(e.target)) {
-                    searchDropdown.classList.add('hidden');
-                }
-            });
-        }
-
-        async function searchCities(query) {
-            if (query.length < 2) {
-                searchDropdown.classList.add('hidden');
-                return;
-            }
-
-            try {
-                const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`);
-                const data = await response.json();
-                
-                if (data.results && data.results.length > 0) {
-                    searchDropdown.innerHTML = data.results.map(city => `
-                        <button onclick="selectCity(${JSON.stringify(city).replace(/"/g, '&quot;')})" class="w-full text-left px-6 py-4 hover:bg-white/10 transition-colors border-b border-white/5 last:border-none">
-                            <div class="font-semibold text-white">${city.name}</div>
-                            <div class="text-xs text-white/40">${city.admin1 ? city.admin1 + ', ' : ''}${city.country}</div>
-                        </button>
-                    `).join('');
-                    searchDropdown.classList.remove('hidden');
-                } else {
-                    searchDropdown.classList.add('hidden');
-                }
-            } catch (err) {
-                console.error('Search error:', err);
-            }
-        }
-
-        function selectCity(city) {
-            currentCity = city;
-            citySearch.value = '';
-            searchDropdown.classList.add('hidden');
-            loadWeather(city);
-        }
-
-        async function loadWeather(city) {
-            showState('loading');
-            try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset,rain_sum&timezone=auto`;
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('API request failed');
-                weatherData = await response.json();
-                renderWeather();
-                showState('content');
-            } catch (err) {
-                document.getElementById('errorMessage').innerText = err.message;
-                showState('error');
-            }
-        }
-
-        function toggleUnit() {
-            unit = unit === 'C' ? 'F' : 'C';
-            document.getElementById('unitText').innerText = `°${unit}`;
-            renderWeather();
-        }
-
-        function convertTemp(c) {
-            return unit === 'C' ? Math.round(c) : Math.round((c * 9/5) + 32);
-        }
-
-        function renderWeather() {
-            if (!weatherData) return;
-
-            const current = weatherData.current;
-            const daily = weatherData.daily;
-            const interpretation = WEATHER_CODES[current.weather_code] || { label: "Clear", icon: "☀️" };
-
-            // Main Details
-            document.getElementById('cityName').innerText = `${currentCity.name}, ${currentCity.country}`;
-            document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-            document.getElementById('mainTemp').innerText = `${convertTemp(current.temperature_2m)}°`;
-            document.getElementById('mainUnit').innerText = `/${unit}`;
-            document.getElementById('conditionText').innerText = interpretation.label;
-            document.getElementById('conditionIcon').innerText = interpretation.icon;
-            document.getElementById('mainIcon').innerText = interpretation.icon;
-            
-            document.getElementById('todayHigh').innerText = `${convertTemp(daily.temperature_2m_max[0])}°`;
-            document.getElementById('todayLow').innerText = `${convertTemp(daily.temperature_2m_min[0])}°`;
-            document.getElementById('todayRain').innerText = `${daily.rain_sum[0]}mm`;
-
-            // Stats
-            document.getElementById('statHumidity').innerText = `${current.relative_humidity_2m}%`;
-            document.getElementById('statWind').innerText = `${current.wind_speed_10m} km/h`;
-            document.getElementById('statSunrise').innerText = daily.sunrise[0].split('T')[1];
-            document.getElementById('statSunset').innerText = daily.sunset[0].split('T')[1];
-
-            // Hourly
-            const hourlyContainer = document.getElementById('hourlyContainer');
-            const now = new Date();
-            const hourIdx = weatherData.hourly.time.findIndex(t => new Date(t) >= now) || 0;
-            
-            hourlyContainer.innerHTML = weatherData.hourly.time.slice(hourIdx, hourIdx + 24).map((time, i) => {
-                const date = new Date(time);
-                const h = date.getHours();
-                const displayTime = h === now.getHours() ? 'Now' : `${h}:00`;
-                const code = weatherData.hourly.weather_code[hourIdx + i];
-                const icon = WEATHER_CODES[code]?.icon || "☀️";
-                const temp = convertTemp(weatherData.hourly.temperature_2m[hourIdx + i]);
-
-                return `
-                    <div class="glass-card-sm p-5 min-w-[110px] flex flex-col items-center gap-3 snap-start hover:bg-white/15 transition-all cursor-default">
-                        <span class="text-[10px] text-white/40 font-bold uppercase tracking-widest">${displayTime}</span>
-                        <span class="text-3xl animate-bounce-slow">${icon}</span>
-                        <span class="text-xl font-bold">${temp}°</span>
-                    </div>
-                `;
-            }).join('');
-
-            // Daily
-            const dailyList = document.getElementById('dailyList');
-            dailyList.innerHTML = daily.time.map((time, i) => {
-                const date = new Date(time);
-                const dayName = i === 0 ? 'Today' : date.toLocaleDateString('en-US', { weekday: 'long' });
-                const code = daily.weather_code[i];
-                const inter = WEATHER_CODES[code] || { label: "Clear", icon: "☀️" };
-                const max = convertTemp(daily.temperature_2m_max[i]);
-                const min = convertTemp(daily.temperature_2m_min[i]);
-
-                return `
-                    <div class="flex items-center justify-between p-6 hover:bg-white/5 transition-colors group">
-                        <div class="flex-1">
-                            <p class="font-bold text-white group-hover:text-primary transition-colors">${dayName}</p>
-                            <p class="text-xs text-white/30">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                        </div>
-                        <div class="flex-[2] flex items-center gap-4">
-                            <span class="text-3xl">${inter.icon}</span>
-                            <span class="text-sm font-medium text-white/70 hidden sm:inline">${inter.label}</span>
-                        </div>
-                        <div class="flex-1 flex justify-end items-baseline gap-4">
-                            <span class="text-xl font-black">${max}°</span>
-                            <span class="text-sm font-medium text-white/30">${min}°</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            lucide.createIcons();
-        }
-
-        function showState(state) {
-            loadingEl.classList.add('hidden');
-            errorEl.classList.add('hidden');
-            weatherContent.classList.add('hidden');
-
-            if (state === 'loading') loadingEl.classList.remove('hidden');
-            if (state === 'error') errorEl.classList.remove('hidden');
-            if (state === 'content') {
-                weatherContent.classList.remove('hidden');
-                weatherContent.classList.add('fade-in');
-            }
-        }
-
-        function loadDefaultWeather() {
-            currentCity = { name: "Kandhkot", latitude: 28.24, longitude: 69.29, country: "Pakistan" };
-            loadWeather(currentCity);
-        }
-
-        window.onload = init;
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
